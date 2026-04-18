@@ -1,2 +1,5 @@
-streamlit == 1.55.0
-bcrypt == 5.0.0
+# --- Frontend & UI ---
+streamlit==1.55.0
+
+# --- Ciberseguridad ---
+bcrypt==5.0.0
