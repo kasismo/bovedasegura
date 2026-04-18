@@ -1,7 +1,7 @@
-streamlit
-math
+streamlit == 1.55.0
+math == 
 time
 random
 string
 hashlib
-bcrypt
+bcrypt == 5.0.0
