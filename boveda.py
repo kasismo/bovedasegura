@@ -1,103 +1,123 @@
 import streamlit as st
-import math
+import pandas as pd
+import numpy as np
 import time
-import random
-import string
-import hashlib
-import bcrypt # NUEVA LIBRERÍA REAL
 
-st.set_page_config(page_title="La Bóveda - Criptografía", page_icon="🔐", layout="wide")
-st.title("🔐 La Bóveda: Simulador de Entropía y Hashing")
-st.markdown("Auditoría de seguridad en tiempo real. Descubre cómo se protegen los datos a nivel de servidor.")
+# ==========================================
+# CONFIGURACIÓN DE LA PÁGINA
+# ==========================================
+st.set_page_config(page_title="Clínica de Datos | Facundo Eliggi", page_icon="🗄️", layout="wide")
+
+# ==========================================
+# GENERADOR DE "BIG DATA" FALSOS (MOCK DATA)
+# ==========================================
+@st.cache_data
+def generar_base_datos_masiva():
+    """Simula una base de datos de una multinacional con 50,000 registros"""
+    # 1. Tabla de Gerentes (Intacta)
+    jefes = pd.DataFrame({
+        'id_jefe': [1, 2, 3, 4, 5],
+        'nombre_jefe': ['Bruce Wayne (CEO)', 'Clark Kent', 'Diana Prince', 'Barry Allen', 'Arthur Curry'],
+        'region': ['Global', 'Norte', 'Sur', 'Este', 'Oeste']
+    })
+    
+    # 2. Tabla de Empleados (50,000 registros)
+    np.random.seed(42) # Para que siempre genere los mismos datos
+    empleados = pd.DataFrame({
+        'id_empleado': range(1000, 51000),
+        'salario': np.random.randint(500, 5000, size=50000),
+        'id_jefe': np.random.choice([1, 2, 3, 4, 5], size=50000) # Asignados aleatoriamente
+    })
+    
+    return jefes, empleados
+
+# ==========================================
+# INTERFAZ Y STORYTELLING TÉCNICO
+# ==========================================
+st.title("🗄️ Clínica de Datos Relacionales")
+st.markdown("### Simulador de Integridad Referencial y Big Data")
+
+# El panel de contexto para el reclutador
+st.info("""
+**ℹ️ CONTEXTO CORPORATIVO: Optimización de Consultas a Gran Escala** En una PYME, encontrar inconsistencias toma segundos revisando un Excel. En este escenario, 
+simulamos la base de datos de una multinacional con **50,000 registros históricos**.  
+Un bucle `for` tradicional colapsaría la memoria RAM y tardaría minutos. Aquí se demuestra el uso de 
+operaciones vectorizadas y lógica de conjuntos (`LEFT JOIN` / `IS NULL`) para resolver crisis en milisegundos.
+""")
+
+# Cargamos los datos
+df_jefes, df_empleados = generar_base_datos_masiva()
+
+# ==========================================
+# EL DESASTRE CORPORATIVO (Simulamos el error)
+# ==========================================
 st.divider()
+st.subheader("🚨 El Incidente: Borrado Accidental en Producción")
+st.write("Un usuario de RRHH ejecutó un `DELETE` accidental y borró a la gerente **Diana Prince (ID 3)** de la tabla de Jefes, pero olvidó reasignar a su equipo.")
 
-# --- FUNCIONES MATEMÁTICAS (LA CIENCIA) ---
-def calcular_espacio_claves(password):
-    """Calcula la Entropía: El valor de K (Keyspace) basado en los caracteres usados."""
-    k = 0
-    if any(c.islower() for c in password): k += 26
-    if any(c.isupper() for c in password): k += 26
-    if any(c.isdigit() for c in password): k += 10
-    if any(c in string.punctuation for c in password): k += 32
-    return k if k > 0 else 1
+# Simulamos que la base de datos de jefes ya no tiene al ID 3
+df_jefes_corrupta = df_jefes[df_jefes['id_jefe'] != 3].reset_index(drop=True)
 
-def formatear_tiempo(segundos):
-    if segundos < 1: return "Milisegundos (Instantáneo)"
-    if segundos < 60: return f"{int(segundos)} segundos"
-    if segundos < 3600: return f"{int(segundos/60)} minutos"
-    if segundos < 86400: return f"{int(segundos/3600)} horas"
-    if segundos < 31536000: return f"{int(segundos/86400)} días"
-    años = segundos / 31536000
-    if años > 1000: return f"+1,000 años (Inhackeable)"
-    return f"{int(años):,} años"
+c1, c2 = st.columns(2)
+with c1:
+    st.markdown("**Tabla Jefes (Actualizada - Falta el ID 3)**")
+    st.dataframe(df_jefes_corrupta, use_container_width=True, hide_index=True)
+with c2:
+    st.markdown("**Tabla Empleados (50,000 registros - Muestra de 5)**")
+    st.dataframe(df_empleados.head(5), use_container_width=True, hide_index=True)
 
-# --- NUEVO: FUNCIÓN CRIPTOGRÁFICA REAL ---
-def generar_hash_real(password_plana, algoritmo):
-    """Genera el hash utilizando las librerías matemáticas reales de Python."""
-    password_bytes = password_plana.encode('utf-8')
+# ==========================================
+# LA SOLUCIÓN TÉCNICA (Tu momento de brillar)
+# ==========================================
+st.divider()
+st.subheader("🛠️ Resolución Técnica: Detección Vectorizada")
+
+if st.button("🚀 Ejecutar Búsqueda Optimizada (Anti-Huérfanos)", type="primary"):
     
-    if "MD5" in algoritmo:
-        return hashlib.md5(password_bytes).hexdigest()
-    else:
-        # Bcrypt REAL: Generamos un Salt aleatorio y hasheamos con un "Work Factor" de 12
-        salt = bcrypt.gensalt(rounds=12)
-        hash_seguro = bcrypt.hashpw(password_bytes, salt)
-        # Decodificamos a string solo para poder mostrarlo en la pantalla
-        return hash_seguro.decode('utf-8')
-
-# --- PANEL DE CONTROL ---
-st.sidebar.header("🎯 Parámetros del Ataque")
-password_objetivo = st.sidebar.text_input("Ingresa una contraseña de prueba:", type="password", value="Admin123")
-algoritmo = st.sidebar.selectbox("Motor de Hashing:", ["MD5 (Obsoleto/Rápido)", "Bcrypt (Estándar/Lento)"])
-iniciar_ataque = st.sidebar.button("Simular Ataque de Fuerza Bruta", type="primary")
-
-# Tasas de Hash realistas para una GPU de gama alta (ej. RTX 4090)
-velocidad_hash = 100000000000 if "MD5" in algoritmo else 100000 
-
-if password_objetivo:
-    # 1. LA CIENCIA EN TIEMPO REAL
-    L = len(password_objetivo)
-    K = calcular_espacio_claves(password_objetivo)
-    combinaciones = K ** L
-    tiempo_estimado_seg = combinaciones / velocidad_hash
+    start_time = time.time()
     
-    # Obtenemos el Hash verdadero llamando a nuestra función
-    hash_real_bd = generar_hash_real(password_objetivo, algoritmo)
+    # --- LA LÓGICA DE BACKEND (PANDAS/SQL) ---
+    # Buscamos qué empleados tienen un ID de jefe que ya no existe en la tabla de jefes
+    huerfanos = df_empleados[~df_empleados['id_jefe'].isin(df_jefes_corrupta['id_jefe'])]
     
-    col_show, col_ciencia = st.columns(2)
+    end_time = time.time()
+    tiempo_ms = (end_time - start_time) * 1000
     
-    with col_ciencia:
-        st.subheader("🧮 Matemáticas del Servidor")
+    # --- RESULTADOS VISUALES ---
+    st.success(f"✅ Búsqueda completada en **{tiempo_ms:.2f} milisegundos**.")
+    
+    st.warning(f"⚠️ Se detectaron **{len(huerfanos):,} empleados huérfanos** que requieren reasignación urgente.")
+    st.dataframe(huerfanos.head(), use_container_width=True, hide_index=True)
+    
+    # --- MOSTRAR EL CÓDIGO AL RECLUTADOR ---
+    st.markdown("#### ¿Cómo se resolvió por detrás?")
+    st.write("En lugar de iterar fila por fila, el motor utiliza operaciones de álgebra relacional en memoria:")
+    
+    tab_sql, tab_pandas = st.tabs(["Lógica SQL (Backend)", "Lógica Pandas (Data Science)"])
+    
+    with tab_sql:
+        st.code("""
+        -- Equivalente en PostgreSQL para detectar integridad rota:
+        SELECT e.id_empleado, e.salario, e.id_jefe
+        FROM tabla_empleados e
+        LEFT JOIN tabla_jefes j ON e.id_jefe = j.id_jefe
+        WHERE j.id_jefe IS NULL;
+        """, language="sql")
         
-        m1, m2 = st.columns(2)
-        m1.metric("Longitud (L)", f"{L}", help="Cantidad de caracteres en la contraseña.")
-        m2.metric("Alfabeto (K)", f"{K}", help="26=Minúsculas, 52=Mayús+Minús, 62=+Números, 94=+Símbolos")
-        
-        st.metric("Combinaciones Totales (K^L)", f"{combinaciones:,}", help="Es el número total de intentos que el hacker tendría que hacer en el peor de los casos.")
-        st.metric("Poder del Hacker (Tasa de Hash)", f"{velocidad_hash:,} H/s", help="Cuántas contraseñas por segundo puede probar una tarjeta gráfica moderna.")
-        
-        st.info(f"⏳ **Tiempo Teórico de Ruptura:** {formatear_tiempo(tiempo_estimado_seg)}")
+    with tab_pandas:
+        st.code("""
+        # Equivalente ejecutado en Python usando memoria vectorizada:
+        ids_validos = df_jefes_corrupta['id_jefe']
+        empleados_huerfanos = df_empleados[~df_empleados['id_jefe'].isin(ids_validos)]
+        """, language="python")
 
-    with col_show:
-        st.subheader("💻 Terminal del Atacante")
-        terminal_visual = st.empty() 
-        
-        st.caption(f"Registro en la Base de Datos:\n`{hash_real_bd}`")
-
-        if iniciar_ataque:
-            # IMPORTANTE: Simulamos visualmente el ataque porque hacer un bucle for REAL 
-            # probando Bcrypt congelaría el servidor de Streamlit (¡lo que prueba su efectividad!)
-            ciclos_animacion = 20 if tiempo_estimado_seg > 2 else int(tiempo_estimado_seg * 10)
+    # --- REPARACIÓN FINAL ---
+    st.markdown("#### 🩹 Acción Crítica: Reasignación Automática")
+    if st.button("Reasignar Huérfanos al CEO (ID 1)"):
+        with st.spinner("Ejecutando UPDATE masivo..."):
+            time.sleep(0.8) # Pausa dramática para simular latencia de red
+            df_reparado = df_empleados.copy()
+            df_reparado.loc[~df_reparado['id_jefe'].isin(df_jefes_corrupta['id_jefe']), 'id_jefe'] = 1
             
-            for _ in range(max(5, ciclos_animacion)): 
-                intento_falso = ''.join(random.choices(string.ascii_letters + string.digits, k=L))
-                hash_falso = hashlib.md5(intento_falso.encode()).hexdigest()[:20]
-                terminal_visual.code(f"Atacando... Probando: {intento_falso}\nGenerando Hash: {hash_falso}...", language="bash")
-                time.sleep(0.05)
-            
-            if tiempo_estimado_seg < 3:
-                terminal_visual.error(f"❌ ¡BÓVEDA VULNERADA!\nContraseña descubierta: {password_objetivo}\nTiempo real: {formatear_tiempo(tiempo_estimado_seg)}")
-            else:
-                terminal_visual.success(f"✅ DEFENSA EXITOSA.\nEl ataque por fuerza bruta es matemáticamente inviable.\nTomaría {formatear_tiempo(tiempo_estimado_seg)}.")
-        else:
-            terminal_visual.code("Esperando orden de ejecución...\nSistema en reposo.", language="bash")
+            st.success("¡Base de datos estabilizada! 10,000 registros actualizados con éxito.")
+            st.balloons()
