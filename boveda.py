@@ -159,4 +159,78 @@ elif pantalla_actual == "🛡️ Clínica de Ciberseguridad":
         elif modo_vista == "Simulador de Ataque (Base de Datos Robada)":
             with st.container(border=True):
                 st.markdown("**⚠️ Entorno de Estrés Criptográfico**")
-                st.write("¿Qué pasa si un atacante evade el login y descarga la base de datos SQL completa? Intentará inyectar un diccionario
+                st.write("¿Qué pasa si un atacante evade el login y descarga la base de datos SQL completa? Intentará inyectar un diccionario de contraseñas localmente.")
+                
+                if st.button("🔥 EJECUTAR ATAQUE DE DICCIONARIO (Offline)", type="primary"):
+                    st.code("[TARGET ACQUIRED] Volcado de memoria SQL extraído.\nHash 1: $2b$12$N9qx1y7g9T8...\nHash 2: $2b$12$x8aL2pQ1m4...\n[INJECTING PAYLOAD] Testeando diccionario rockyou.txt (10M combinaciones)", language="bash")
+                    
+                    progreso = st.progress(0)
+                    estado_ataque = st.empty()
+                    
+                    for i in range(1, 35):
+                        progreso.progress(i)
+                        estado_ataque.caption(f"Calculando iteraciones de cifrado... {i}% (Hash 1 de 10,000)")
+                        time.sleep(0.05)
+                    
+                    progreso.empty()
+                    estado_ataque.error("🛑 ATAQUE FALLIDO: Sobrecarga de CPU en el cliente (Timeout)")
+                    
+                    st.divider()
+                    st.markdown("### 🧮 ¿Por qué fracasó el ataque?")
+                    st.write("Bcrypt no es solo un hash, es una **función de derivación de claves con coste adaptable**. El servidor fue configurado con un `Work Factor = 12`, lo que determina su costo computacional:")
+                    
+                    st.markdown("$$ Coste Computacional = 2^{\\text{Work Factor}} $$")
+                    st.markdown("$$ 2^{12} = 4096 \\text{ iteraciones por cada intento de validación} $$")
+                    
+                    st.write("Para probar un diccionario básico de **10 millones de contraseñas** contra un solo usuario, un clúster de servidores tardaría meses. El costo energético ($) de ejecutar este cálculo masivo hace que hackear la base de datos sea matemáticamente inviable para el atacante.")
+
+# ==========================================
+# --- PANTALLA 3: DATOS RELACIONALES ---
+# ==========================================
+elif pantalla_actual == "🗄️ Clínica de Datos Relacionales":
+    st.title("🗄️ Clínica de Datos Relacionales")
+    st.markdown("### Simulador de Integridad Referencial y Big Data")
+
+    st.info("**ℹ️ CONTEXTO CORPORATIVO: Optimización de Consultas a Gran Escala.** Simulamos la base de datos de una multinacional con **50,000 registros históricos**. Un bucle tradicional colapsaría la memoria RAM. Aquí se demuestra el uso de operaciones vectorizadas y lógica de conjuntos (`LEFT JOIN` / `IS NULL`) para resolver crisis en milisegundos.")
+    
+    df_jefes, df_empleados = generar_base_datos_masiva()
+
+    st.divider()
+    st.subheader("🚨 El Incidente: Borrado Accidental en Producción")
+    st.write("Un usuario ejecutó un `DELETE` accidental y borró a la gerente **Diana Prince (ID 3)**, dejando a miles de empleados sin jefe asignado.")
+
+    df_jefes_corrupta = df_jefes[df_jefes['id_jefe'] != 3].reset_index(drop=True)
+
+    c1, c2 = st.columns(2)
+    with c1: 
+        st.markdown("**Tabla Jefes (Falta el ID 3)**")
+        st.dataframe(df_jefes_corrupta, use_container_width=True, hide_index=True)
+    with c2: 
+        st.markdown("**Tabla Empleados (50,000 registros)**")
+        st.dataframe(df_empleados.head(5), use_container_width=True, hide_index=True)
+
+    st.divider()
+    st.subheader("🛠️ Resolución Técnica: Detección Vectorizada")
+
+    if st.button("🚀 Ejecutar Búsqueda Optimizada (Anti-Huérfanos)", type="primary"):
+        start_time = time.time()
+        huerfanos = df_empleados[~df_empleados['id_jefe'].isin(df_jefes_corrupta['id_jefe'])]
+        tiempo_ms = (time.time() - start_time) * 1000
+        
+        st.success(f"✅ Búsqueda completada en **{tiempo_ms:.2f} milisegundos**.")
+        st.warning(f"⚠️ Se detectaron **{len(huerfanos):,} empleados huérfanos** que requieren reasignación urgente.")
+        st.dataframe(huerfanos.head(), use_container_width=True, hide_index=True)
+        
+        st.markdown("#### ¿Cómo se resolvió por detrás?")
+        tab_sql, tab_pandas = st.tabs(["Lógica SQL (Backend)", "Lógica Pandas (Data Science)"])
+        with tab_sql:
+            st.code("SELECT e.id_empleado, e.salario, e.id_jefe\nFROM tabla_empleados e\nLEFT JOIN tabla_jefes j ON e.id_jefe = j.id_jefe\nWHERE j.id_jefe IS NULL;", language="sql")
+        with tab_pandas:
+            st.code("ids_validos = df_jefes_corrupta['id_jefe']\nempleados_huerfanos = df_empleados[~df_empleados['id_jefe'].isin(ids_validos)]", language="python")
+
+        st.markdown("#### 🩹 Acción Crítica: Reasignación Automática")
+        if st.button("Reasignar Huérfanos al CEO (ID 1)"):
+            with st.spinner("Ejecutando UPDATE masivo..."):
+                time.sleep(0.8)
+                st.success("¡Base de datos estabilizada! 10,000 registros actualizados con éxito.")
+                st.balloons()
