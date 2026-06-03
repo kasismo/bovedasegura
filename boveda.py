@@ -70,100 +70,138 @@ if pantalla_actual == "🏠 Inicio y Contexto":
     st.success("👈 Selecciona una clínica en el menú lateral para comenzar.")
 
 # ==========================================
-# --- PANTALLA 2: CIBERSEGURIDAD (MODO WIREFRAME) ---
+# --- PANTALLA 2: CIBERSEGURIDAD B2B ---
 # ==========================================
 elif pantalla_actual == "🛡️ Clínica de Ciberseguridad":
     st.title("🛡️ Clínica de Ciberseguridad B2B")
     st.markdown("### Prevención de Fuerza Bruta y Análisis Bcrypt")
 
-    st.info("**ℹ️ ESCENARIO DE AMENAZA:** Bcrypt es intencionalmente costoso para la CPU. Esta demostración ilustra gráficamente por qué un ataque de diccionario fracasa contra un Work Factor alto, saturando los recursos del atacante antes que los del servidor.")
+    st.info("**ℹ️ ARQUITECTURA DE DEFENSA EN DOS CAPAS:**\n1. **Perímetro (Frontend):** Rate Limiting corta los ataques de fuerza bruta al 5to intento fallido.\n2. **Núcleo (Backend):** Si un atacante roba la base de datos, el costo computacional de Bcrypt satura su CPU antes de que pueda descifrar los hashes.")
     st.divider()
 
     # Layout exacto de tu diagrama
     col_izq, espaciador, col_der = st.columns([1, 0.1, 1.5])
 
     # ------------------------------------------
-    # CAJA IZQUIERDA: LOGIN TRADICIONAL
+    # CAJA IZQUIERDA: LOGIN TRADICIONAL (FUNCIONAL)
     # ------------------------------------------
     with col_izq:
         st.subheader("🖥️ Frontend (Login)")
         with st.container(border=True):
-            st.markdown("<br>", unsafe_allow_html=True)
+            st.markdown("Intenta ingresar con credenciales incorrectas para disparar el escudo perimetral.")
+            
             email_input = st.text_input("Correo Electrónico", value="gerente@industriasfaku.com")
             pass_input = st.text_input("Contraseña", type="password")
-            st.markdown("<br>", unsafe_allow_html=True)
-            btn_login = st.button("ACCEDER", type="primary", use_container_width=True)
             
-            if btn_login:
-                st.toast("Intento de acceso enviado al backend...", icon="🚀")
+            c_btn1, c_btn2 = st.columns([1, 1])
+            btn_login = c_btn1.button("ACCEDER", type="primary", use_container_width=True)
+            btn_bot = c_btn2.button("🤖 Simular Bot (x5)", use_container_width=True)
+            
+            st.caption("*(Tip: La contraseña real es `admin123`)*")
+
+            # LÓGICA DE LOGIN REAL
+            if btn_login or btn_bot:
+                # Si apretó el botón del bot, forzamos la clave mala y multiplicamos por 5
+                intentos_a_procesar = 5 if btn_bot else 1
+                clave_a_probar = "bot_password" if btn_bot else pass_input
+                
+                usuario = st.session_state['db_usuarios'].get(email_input)
+                
+                if not usuario:
+                    st.error("Usuario no encontrado.")
+                    agregar_log(f"⚠️ Fallo: Correo inexistente ({email_input})")
+                else:
+                    for _ in range(intentos_a_procesar):
+                        ahora = datetime.now()
+                        
+                        # 1. VERIFICACIÓN DE BLOQUEO PERIMETRAL
+                        if usuario['bloqueado_hasta'] and ahora < usuario['bloqueado_hasta']:
+                            st.error(f"❌ Cuenta bloqueada por seguridad. Vuelva a intentar en 4 horas.")
+                            agregar_log(f"🛑 RECHAZADO: Cuenta {email_input} bloqueada. CPU salvada.")
+                            break # Corta el bucle si está bloqueado
+                        
+                        else:
+                            # 2. VERIFICACIÓN BCRYPT
+                            agregar_log(f"🔍 Evaluando credenciales para {email_input}...")
+                            start_time = time.time()
+                            es_valido = bcrypt.checkpw(clave_a_probar.encode('utf-8'), usuario['hash'])
+                            tiempo_ms = (time.time() - start_time) * 1000
+                            
+                            if es_valido:
+                                st.success("✅ ¡Acceso Concedido!")
+                                usuario['intentos_fallidos'] = 0
+                                agregar_log(f"✅ ÉXITO: Sesión iniciada. Costo CPU: {tiempo_ms:.2f} ms")
+                                break
+                            else:
+                                if no btn_bot: st.error("❌ Contraseña incorrecta.")
+                                usuario['intentos_fallidos'] += 1
+                                agregar_log(f"❌ ERROR: Intento {usuario['intentos_fallidos']}/5. Costo CPU: {tiempo_ms:.2f} ms")
+                                
+                                # BLOQUEO TEMPORAL
+                                if usuario['intentos_fallidos'] >= 5:
+                                    usuario['bloqueado_hasta'] = ahora + timedelta(hours=4)
+                                    agregar_log(f"🚨 ALERTA: Límite superado. Cuenta bloqueada por 4hs.")
+                                    if btn_bot: st.error("❌ Cuenta bloqueada por seguridad. Vuelva a intentar en 4 horas.")
 
     # ------------------------------------------
     # CAJA DERECHA: CONSOLA Y SIMULADOR
     # ------------------------------------------
     with col_der:
-        # Switcher Back-Front
-        modo_vista = st.radio("📡 Selector de Vista:", ["Console Logs (Trafico Vivo)", "Simulador de Ataque (Hacking)"], horizontal=True)
-        
-        st.write("") # Espaciador
+        modo_vista = st.radio("📡 Selector de Vista Backend:", ["Console Logs (Trafico Vivo)", "Simulador de Ataque (Base de Datos Robada)"], horizontal=True)
+        st.write("")
         
         # VISTA 1: LOGS DE TRÁFICO VIVO
         if modo_vista == "Console Logs (Trafico Vivo)":
             with st.container(border=True):
-                st.markdown("**Terminal de Monitoreo**")
+                st.markdown("**Terminal de Monitoreo & Estado de DB**")
                 
-                # Simulamos la lista de 10-15 que se desplaza hacia abajo
-                logs_falsos = [
-                    "[14:05:22] CONEXIÓN ENTRANTE - IP: 192.168.1.45",
-                    "[14:05:23] AUTH REQUEST - gerente@industriasfaku.com",
-                    "[14:05:23] BCRYPT VALIDATION... SUCCESS",
-                    "[14:12:01] CONEXIÓN ENTRANTE - IP: 10.0.0.8",
-                    "[14:12:05] AUTH REQUEST - admin@industriasfaku.com",
-                    "[14:12:06] BCRYPT VALIDATION... FAILED (Bad Password)",
-                    "[14:18:44] SYSTEM CHECK - OK"
-                ]
-                st.code("\n".join(logs_falsos), language="bash")
-                st.caption("Los logs más antiguos se purgan automáticamente para ahorrar memoria RAM.")
+                # Estado real de la DB falsa
+                datos_usuario = st.session_state['db_usuarios'].get("gerente@industriasfaku.com")
+                estado_bloqueo = "ACTIVA" if not datos_usuario['bloqueado_hasta'] or datetime.now() > datos_usuario['bloqueado_hasta'] else "BLOQUEADA (4hs)"
+                
+                st.code(f"[DATABASE STATUS]\nUsuario: gerente@industriasfaku.com\nIntentos Fallidos: {datos_usuario['intentos_fallidos']} / 5\nEstado: {estado_bloqueo}", language="bash")
+                
+                # Logs reales del sistema
+                log_text = "\n".join(st.session_state['logs_backend'])
+                st.code(log_text if log_text else "Esperando tráfico entrante en el puerto 443...", language="log")
+                
+            if st.button("🔄 Purgar Logs y Desbloquear Cuenta"):
+                st.session_state['db_usuarios']["gerente@industriasfaku.com"].update({'intentos_fallidos': 0, 'bloqueado_hasta': None})
+                st.session_state['logs_backend'] = []
+                st.rerun()
 
         # VISTA 2: EL SIMULADOR DE ATAQUE
-        elif modo_vista == "Simulador de Ataque (Hacking)":
+        elif modo_vista == "Simulador de Ataque (Base de Datos Robada)":
             with st.container(border=True):
-                st.markdown("**⚠️ Entorno de Estrés de Base de Datos**")
-                st.write("Inyectar diccionario de 10,000 contraseñas contra los hashes de la base de datos.")
+                st.markdown("**⚠️ Entorno de Estrés Criptográfico**")
+                st.write("¿Qué pasa si un atacante evade el login y descarga la base de datos SQL completa? Intentará inyectar un diccionario de contraseñas localmente.")
                 
-                if st.button("🔥 EJECUTAR ATAQUE DE DICCIONARIO (Fuerza Bruta)", type="primary"):
-                    
-                    # 1. Empiezan a verse las contraseñas largas
+                if st.button("🔥 EJECUTAR ATAQUE DE DICCIONARIO (Offline)", type="primary"):
                     st.code("""
-[TARGET ACQUIRED] Extrayendo Hashes de la DB...
+[TARGET ACQUIRED] Volcado de memoria SQL extraído.
 Hash 1: $2b$12$N9qx1y7g9T8...
 Hash 2: $2b$12$x8aL2pQ1m4...
-Hash 3: $2b$12$L9zT5bY6n2...
-[INJECTING PAYLOAD] Testeando diccionario rockyou.txt
+[INJECTING PAYLOAD] Testeando diccionario rockyou.txt (10M combinaciones)
                     """, language="bash")
                     
-                    # 2. Barra de procesamiento intentando hackear la primera
                     progreso = st.progress(0)
                     estado_ataque = st.empty()
                     
-                    # Simulamos que el atacante se queda trabado en la primera iteración
+                    # Simulamos la asfixia del procesador
                     for i in range(1, 35):
                         progreso.progress(i)
-                        estado_ataque.caption(f"Calculando combinaciones... {i}% (Hash 1 de 10,000)")
+                        estado_ataque.caption(f"Calculando iteraciones de cifrado... {i}% (Hash 1 de 10,000)")
                         time.sleep(0.05)
                     
-                    # 3. Fracaso y explicación matemática
                     progreso.empty()
                     estado_ataque.error("🛑 ATAQUE FALLIDO: Sobrecarga de CPU en el cliente (Timeout)")
                     
                     st.divider()
                     st.markdown("### 🧮 ¿Por qué fracasó el ataque?")
-                    st.write("Bcrypt no es solo un hash, es una **función de derivación de claves con coste adaptable**.")
+                    st.write("Bcrypt no es solo un hash, es una **función de derivación de claves con coste adaptable**. El servidor fue configurado con un `Work Factor = 12`, lo que determina su costo computacional:")
                     
-                    # Usamos LaTeX puro para demostrar el peso matemático de la encriptación
-                    st.latex(r"Coste Computacional = 2^{\text{Work Factor}}")
+                    # Fórmula matemática en LaTeX (Display)
+                    st.markdown("$$ Coste Computacional = 2^{\\text{Work Factor}} $$")
+                    st.markdown("$$ 2^{12} = 4096 \\text{ iteraciones por cada intento de validación} $$")
                     
-                    st.write("El servidor está configurado con un `Work Factor = 12`. Esto obliga a la CPU del atacante a procesar el algoritmo EksBlowfish exactamente:")
-                    
-                    st.latex(r"2^{12} = 4096 \text{ iteraciones por cada intento}")
-                    
-                    st.write("Para probar un diccionario básico de **10 millones de contraseñas** contra un solo usuario, un clúster de servidores tardaría meses. La barrera criptográfica hace que el coste económico del ataque sea infinitamente superior al valor de los datos.")
+                    st.write("Para probar un diccionario básico de **10 millones de contraseñas** contra un solo usuario, un clúster de servidores tardaría meses. El costo energético ($) de ejecutar este cálculo masivo hace que hackear la base de datos sea matemáticamente inviable para el atacante.")
