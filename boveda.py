@@ -133,7 +133,7 @@ elif pantalla_actual == "🛡️ Clínica de Ciberseguridad":
                                 agregar_log(f"✅ ÉXITO: Sesión iniciada. Costo CPU: {tiempo_ms:.2f} ms")
                                 break
                             else:
-                                if no btn_bot: st.error(str"❌ Contraseña incorrecta.")
+                                if no btn_bot: st.error("❌ Contraseña incorrecta.")
                                 usuario['intentos_fallidos'] += 1
                                 agregar_log(f"❌ ERROR: Intento {usuario['intentos_fallidos']}/5. Costo CPU: {tiempo_ms:.2f} ms")
                                 
